@@ -1,21 +1,35 @@
 from socket import *
 from utils import send_msg, recv_msg, addr_to_str, get_user_by_addr
 from struct import error
-from message import MessageStorage
+from message_storage import MessageStorage
 
 import config
 import threading
 
+MAX_MSG_LEN = 60
+MAX_USER_LEN = 8
 USERS = dict()
 
 
 def register(conn, addr):
-    login = recv_msg(conn).decode()
+    login = recv_msg(conn)
+
+    try:
+        login = login.decode()
+    except Exception:
+        send_msg(conn, b"Can't decode login!")
+        print("[-] Can't decode login!")
+        return False
 
     if not login:
-        send_msg(conn, "Bad login!".encode())
+        send_msg(conn, b"Bad login!")
+        print("[-] ({}) empty login!".format(addr_to_str(addr)))
         return False
-        print("[+] '{}'({}) registered!".format(login, addr_to_str(addr)))
+    
+    if len(login) > MAX_USER_LEN:
+        send_msg(conn, b"Login is too long!")
+        print("[-] ({}) Username '{}' is greater then {} chars!".format(addr_to_str(addr), login, MAX_USER_LEN))
+        return False
 
     if login not in USERS:
         if addr[0] not in USERS.values():
@@ -45,12 +59,77 @@ def get_users(conn, addr):
     print("[+] users sended to {}".format(addr_to_str(addr)))
 
 
-def logout(conn, addr):
+def logout(conn, addr, ms):
     user = get_user_by_addr(addr)
     if user:
         del USERS[user]
-    send_msg(conn, "U've been successfully logouted".format().encode())
+    ms.get_messages_for_user(user)
+    send_msg(conn, b"U've been successfully logouted")
     print("[+] {}({}) logouted".format(user, addr_to_str(addr)))
+
+
+def send(conn, addr, ms):
+    user_to = recv_msg(conn).decode()
+    context = recv_msg(conn).decode()
+    user_from = get_user_by_addr(addr, USERS)
+
+    if len(context) > MAX_MSG_LEN:
+        send_msg(conn, "Massage is too long! Max length = {}!".format(MAX_MSG_LEN).encode())
+        print("[-] '{}'({}) sended message of length {}!".format(user_from, addr_to_str(addr)), len(context))
+        return False
+    
+    if not user_from:
+        send_msg(conn, b"U aren't registered!")
+        print("[-] User isn't regitered!")
+        return False
+    
+    if user_to not in USERS:
+        send_msg(conn, "User '{}' doesn't exist!".format(user_to).encode())
+        print("[-] There are not user '{}' in system!".format(user_to))
+        return False
+    
+    ms.add_message(user_from, user_to, context)
+    send_msg(conn, b"Message added to storage!")
+    print("[+] Message ('{}') from '{}'({}) sent to '{}'".format(context, user_from, addr_to_str(addr), user_to))
+    return True
+
+
+def sendall(conn, addr, ms):
+    context = recv_msg(conn).decode()
+    user_from = get_user_by_addr(addr, USERS)
+
+    if len(context) > MAX_MSG_LEN:
+        send_msg(conn, "Massage is too long! Max length = {}!".format(MAX_MSG_LEN).encode())
+        print("[-] '{}'({}) sended message of length {}!".format(user_from, addr_to_str(addr)), len(context))
+        return False
+
+    if not user_from:
+        send_msg(conn, b"U aren't registered!")
+        print("[-] User isn't regitered!")
+        return False
+    
+    for user_to in USERS:
+        if user_to != user_from:
+            ms.add_message(user_from, user_to, context)
+            print("[+] Message ('{}') from '{}'({}) sent to '{}'".format(context, user_from, addr_to_str(addr), user_to))
+
+    send_msg(conn, b"Message added to storage!")
+
+
+def receive(conn, addr, ms):
+    user_to = get_user_by_addr(addr, USERS)
+    
+    if not user_to:
+        send_msg(conn, b"U aren't registered!")
+        print("[-] User isn't regitered!")
+        return False
+    
+    msgs = ms.get_messages_for_user(user_to)
+    send_msg(conn, str(len(msgs)).encode())
+    for msg in msgs:
+        send_msg(conn, msg.user_from.encode())
+        send_msg(conn, msg.msg.encode())
+    return True
 
 
 def handler(conn, addr, ms):
@@ -65,6 +144,13 @@ def handler(conn, addr, ms):
                 get_users(conn, addr)
             elif msg == b"logout":
                 logout(conn, addr)
+            elif msg == b"send":
+                if not send(conn, addr, ms):
+                    break
+            elif msg == b"receive":
+                receive(conn, addr, ms)
+            elif msg == b"sendall":
+                sendall(conn, addr, ms)
             else:
                 break
     except error:
@@ -72,9 +158,6 @@ def handler(conn, addr, ms):
     except Exception as ex:
         print("[-] Exception: {}".format(ex))
     finally:
-        user = get_user_by_addr(addr, USERS)
-        if user:
-            del USERS[user]
         conn.close()
 
 

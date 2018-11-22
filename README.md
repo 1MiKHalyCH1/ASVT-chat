@@ -5,7 +5,10 @@ This repository contains the python [implementation](server/server.py) of chat-s
 ## How to run
 
 ### Local run
-```python3 server.py```
+```
+cd server
+python3 server.py
+```
 Requires python >= 3.5.
 
 Server parameters can be configured in [config.py](config.py)
@@ -29,11 +32,11 @@ register Bob -> b'\x08\x00\x00\x00register\x03\x00\x00\x00Bob'
 
 ## Messages format
 
-<b>Messages would contain only utf-8 characters!</b>
+<b>Messages shouldn't be greater then 60 characters!</b>
 
 Messages format looks similar to commands format:
 ```
-<packed reciever username length> + <reciever username> + <packed message length> + <message>
+<packed receiver username length> + <receiver username> + <packed message length> + <message>
 ```
 
 Example:
@@ -45,14 +48,14 @@ Example:
 
 ## Commands
 
-After each command you would recieve message.
+After each command you would receive message.
 
-* `register <username>` - Registration on server. U can't use name of another user.
+* `register <username>` - Registration on server. U can't use name of another user. <b>Username shouldn't be greater then 8 symbols</b>
 * `users` - Get list of online users.
 * `send <formated message>` - Message sending for specific user.
 * `sendall <message>` - Message sending for all online users.
-* `recieve` - Recieve all messages that was sended for you. After this command all messages would be removed from server.
-Mesages are recieved in specific order: 
+* `receive` - receive all messages that was sended for you. After this command all messages would be removed from server.
+Mesages are received in specific order: 
 ```
   1) N = <messages count>
   2) Message 1
