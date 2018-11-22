@@ -1,0 +1,7 @@
+version: '2'
+services:
+  asvt_server:
+    build: ./server
+    restart: always
+    ports:
+      - "0.0.0.0:31337:31337"

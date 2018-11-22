@@ -13,6 +13,13 @@ Requires python >= 3.5.
 
 Server parameters can be configured in [config.py](server/config.py)
 
+
+## Docker run
+```
+docker-compose up --build -d
+```
+Server starts in docker (with default parameters in [config.py](server/config.py))
+
 ## Commands format
 
 All commands to server should be packed:

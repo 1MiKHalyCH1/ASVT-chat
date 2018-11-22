@@ -60,7 +60,7 @@ def get_users(conn, addr):
 
 
 def logout(conn, addr, ms):
-    user = get_user_by_addr(addr)
+    user = get_user_by_addr(addr, USERS)
     if user:
         del USERS[user]
     ms.get_messages_for_user(user)
@@ -143,7 +143,7 @@ def handler(conn, addr, ms):
             elif msg == b"users":
                 get_users(conn, addr)
             elif msg == b"logout":
-                logout(conn, addr)
+                logout(conn, addr, ms)
             elif msg == b"send":
                 if not send(conn, addr, ms):
                     break

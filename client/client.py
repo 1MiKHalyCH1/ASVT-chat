@@ -1,7 +1,7 @@
 from socket import *
 from command_utils import send_msg, recv_msg
 
-ADDR = "10.97.167.134", 31337
+ADDR = "0.0.0.0", 31337
 
 
 def register(s, login):
