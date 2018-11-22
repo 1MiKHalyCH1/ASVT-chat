@@ -11,7 +11,7 @@ python3 server.py
 ```
 Requires python >= 3.5.
 
-Server parameters can be configured in [config.py](config.py)
+Server parameters can be configured in [config.py](server/config.py)
 
 ## Commands format
 
