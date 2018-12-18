@@ -86,7 +86,7 @@ def send(conn, addr, ms):
     if user_to not in USERS:
         send_msg(conn, "User '{}' doesn't exist!".format(user_to).encode())
         print("[-] There are not user '{}' in system!".format(user_to))
-        return False
+        return True
     
     ms.add_message(user_from, user_to, context)
     send_msg(conn, b"Message added to storage!")
